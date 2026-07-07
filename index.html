@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Kalkulator sprzedaży składników</title>
+  <style>
+    :root {
+      --bg: #f5f2ed;
+      --card: #ffffff;
+      --text: #1f2933;
+      --muted: #6b7280;
+      --border: #ddd6cc;
+      --accent: #9a6b2f;
+      --accent-dark: #745022;
+      --red: #c0392b;
+      --orange: #e67e22;
+      --success: #1f7a4d;
+      --danger: #b83b32;
+      --shadow: 0 12px 30px rgba(31, 41, 51, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 30px 18px 56px;
+    }
+
+    header { margin-bottom: 22px; }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      line-height: 1.15;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 21px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      max-width: 920px;
+      margin: 0;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 0 0 12px;
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 11px;
+      font-size: 15px;
+      background: #fffdf9;
+      color: var(--text);
+      outline: none;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(154, 107, 47, 0.16);
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      background: var(--accent);
+      color: white;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover { background: var(--accent-dark); }
+    button.secondary { background: #ece3d6; color: var(--text); }
+    button.secondary:hover { background: #dfd1bf; }
+    button.success { background: var(--success); }
+    button.success:hover { background: #155c39; }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .search { max-width: 360px; }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 14px 0;
+      align-items: center;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: #f1e9dd;
+      color: #4b3a28;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      max-height: 650px;
+      background: #fffdf9;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1050px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #f1e9dd;
+      font-size: 14px;
+      color: #3d3428;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+    td input { padding: 8px 9px; min-width: 82px; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .badge.red { color: #7f1d1d; background: #fde2df; }
+    .badge.orange { color: #7c3d00; background: #ffe8cf; }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .metric {
+      border: 1px solid var(--border);
+      background: #fffdf9;
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .metric span { display: block; color: var(--muted); font-size: 13px; margin-bottom: 4px; }
+    .metric strong { font-size: 19px; font-variant-numeric: tabular-nums; }
+
+    .note-box {
+      white-space: pre-wrap;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      background: #fffdf9;
+      min-height: 140px;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .empty {
+      border: 1px solid #efd3a4;
+      background: #fff7e8;
+      color: #68410e;
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .status {
+      color: var(--success);
+      font-size: 14px;
+      font-weight: 700;
+      min-height: 20px;
+      margin-left: auto;
+    }
+
+    .warning {
+      color: var(--danger);
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 5px;
+      min-height: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .summary { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 560px) {
+      .page { padding: 22px 12px 42px; }
+      .card { padding: 16px; }
+      h1 { font-size: 27px; }
+      .summary { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <h1>Kalkulator sprzedaży składników</h1>
+      <p class="subtitle">Wybierz ilości do sprzedaży. Dostępny stan, nazwy i ceny są tylko do odczytu.</p>
+    </header>
+
+    <section id="emptyState" class="card" hidden>
+      <div class="empty">
+        Brak danych. Otwórz link wygenerowany z panelu składników.
+      </div>
+    </section>
+
+    <section id="app" hidden>
+      <section class="card">
+        <div class="toolbar">
+          <div>
+            <h2 style="margin-bottom:6px;">Stan i wycena sprzedaży</h2>
+            <p class="small" id="updatedInfo" style="margin-bottom:0;"></p>
+          </div>
+          <input class="search" id="searchInput" type="text" placeholder="Szukaj składnika..." />
+        </div>
+
+        <div class="actions">
+          <button class="secondary" id="useAllBtn">Sprzedaj wszystko dostępne</button>
+          <button class="secondary" id="zeroWantedBtn">Wyzeruj ilości sprzedaży</button>
+          <span class="pill" id="visibleRowsInfo">0 pozycji</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Składnik</th>
+                <th><span class="badge orange">Dostępne pom.</span></th>
+                <th><span class="badge red">Dostępne czerw.</span></th>
+                <th><span class="badge orange">Sprzedaj pom.</span></th>
+                <th><span class="badge red">Sprzedaj czerw.</span></th>
+                <th>Cena pom.</th>
+                <th>Cena czerw.</th>
+                <th>Koszt razem</th>
+              </tr>
+            </thead>
+            <tbody id="ingredientsBody"></tbody>
+          </table>
+        </div>
+
+        <div class="summary">
+          <div class="metric"><span>Sprzedawane pom.</span><strong id="wantedOrangeTotal">0</strong></div>
+          <div class="metric"><span>Sprzedawane czerw.</span><strong id="wantedRedTotal">0</strong></div>
+          <div class="metric"><span>Sprzedawane razem</span><strong id="wantedTotal">0</strong></div>
+          <div class="metric"><span>Koszt razem</span><strong id="totalCost">0 złota</strong></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Notatka</h2>
+        <div id="note" class="note-box"></div>
+        <div class="actions">
+          <button class="success" id="copyNoteBtn">Kopiuj notatkę</button>
+          <span id="status" class="status"></span>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    let ingredients = [];
+    let updatedAt = "";
+    const INPUT_DELAY_MS = 2000;
+    const pendingSaleInputs = new Map();
+
+    const els = {
+      emptyState: document.getElementById("emptyState"),
+      app: document.getElementById("app"),
+      updatedInfo: document.getElementById("updatedInfo"),
+      searchInput: document.getElementById("searchInput"),
+      useAllBtn: document.getElementById("useAllBtn"),
+      zeroWantedBtn: document.getElementById("zeroWantedBtn"),
+      visibleRowsInfo: document.getElementById("visibleRowsInfo"),
+      body: document.getElementById("ingredientsBody"),
+      wantedOrangeTotal: document.getElementById("wantedOrangeTotal"),
+      wantedRedTotal: document.getElementById("wantedRedTotal"),
+      wantedTotal: document.getElementById("wantedTotal"),
+      totalCost: document.getElementById("totalCost"),
+      note: document.getElementById("note"),
+      copyNoteBtn: document.getElementById("copyNoteBtn"),
+      status: document.getElementById("status")
+    };
+
+    function toNumber(value) {
+      const normalized = String(value ?? "").trim().replace(/\s/g, "").replace(",", ".");
+      const number = Number(normalized);
+      return Number.isFinite(number) && number > 0 ? Math.floor(number) : 0;
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(toNumber(value), min), max);
+    }
+
+    function normalizeText(value) {
+      return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function formatGold(value) {
+      return new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 0 }).format(toNumber(value)) + " złota";
+    }
+
+    function decodeData(value) {
+      const normalized = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+      const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+      const binary = atob(padded);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      return JSON.parse(new TextDecoder().decode(bytes));
+    }
+
+    function loadFromUrl() {
+      const hash = window.location.hash.replace(/^#/, "");
+      const params = new URLSearchParams(hash);
+      const encoded = params.get("d");
+      if (!encoded) return false;
+
+      try {
+        const data = decodeData(encoded);
+        if (!data || !Array.isArray(data.items)) return false;
+        updatedAt = data.updatedAt || "";
+        ingredients = data.items.map((item, index) => ({
+          id: String(index) + "-" + normalizeText(item.n),
+          name: String(item.n || "Bez nazwy").trim(),
+          availableOrange: toNumber(item.ao),
+          availableRed: toNumber(item.ar),
+          wantedOrange: 0,
+          wantedRed: 0,
+          priceOrange: toNumber(item.po),
+          priceRed: toNumber(item.pr)
+        }));
+        return ingredients.length > 0;
+      } catch {
+        return false;
+      }
+    }
+
+    function filteredIngredients() {
+      const query = normalizeText(els.searchInput.value);
+      if (!query) return ingredients;
+      return ingredients.filter(item => normalizeText(item.name).includes(query));
+    }
+
+    function pluralOrange(qty) {
+      if (qty === 1) return "1 sztuka pomarańczowa";
+      if (qty % 10 >= 2 && qty % 10 <= 4 && !(qty % 100 >= 12 && qty % 100 <= 14)) return `${qty} sztuki pomarańczowe`;
+      return `${qty} sztuk pomarańczowych`;
+    }
+
+    function pluralRed(qty) {
+      if (qty === 1) return "1 czerwona";
+      if (qty % 10 >= 2 && qty % 10 <= 4 && !(qty % 100 >= 12 && qty % 100 <= 14)) return `${qty} czerwone`;
+      return `${qty} czerwonych`;
+    }
+
+    function buildNote() {
+      const selected = ingredients.filter(item => item.wantedOrange > 0 || item.wantedRed > 0);
+      if (selected.length === 0) return "Nie wybrano jeszcze składników.";
+      return selected
+        .map(item => {
+          const orangeCost = item.wantedOrange * item.priceOrange;
+          const redCost = item.wantedRed * item.priceRed;
+          const rowCost = orangeCost + redCost;
+          return `${item.name} : ${pluralOrange(item.wantedOrange)} / ${pluralRed(item.wantedRed)} | koszt pom.: ${formatGold(orangeCost)} | koszt czerw.: ${formatGold(redCost)} | razem: ${formatGold(rowCost)}`;
+        })
+        .join("\n");
+    }
+
+    function render() {
+      const filtered = filteredIngredients();
+      els.visibleRowsInfo.textContent = `${filtered.length} z ${ingredients.length} pozycji`;
+      els.body.innerHTML = "";
+
+      let wantedOrangeTotal = 0;
+      let wantedRedTotal = 0;
+      let totalCost = 0;
+
+      ingredients.forEach(item => {
+        item.wantedOrange = clamp(item.wantedOrange, 0, item.availableOrange);
+        item.wantedRed = clamp(item.wantedRed, 0, item.availableRed);
+        wantedOrangeTotal += item.wantedOrange;
+        wantedRedTotal += item.wantedRed;
+        totalCost += item.wantedOrange * item.priceOrange + item.wantedRed * item.priceRed;
+      });
+
+      if (filtered.length === 0) {
+        els.body.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px;">Brak składników do wyświetlenia.</td></tr>`;
+      }
+
+      filtered.forEach(item => {
+        const rowCost = item.wantedOrange * item.priceOrange + item.wantedRed * item.priceRed;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${escapeHtml(item.name)}</td>
+          <td class="num">${item.availableOrange}</td>
+          <td class="num">${item.availableRed}</td>
+          <td>
+            <input type="number" min="0" max="${item.availableOrange}" step="1" value="${item.wantedOrange}" data-id="${item.id}" data-field="wantedOrange" />
+            <div class="warning" data-warning="${item.id}-wantedOrange"></div>
+          </td>
+          <td>
+            <input type="number" min="0" max="${item.availableRed}" step="1" value="${item.wantedRed}" data-id="${item.id}" data-field="wantedRed" />
+            <div class="warning" data-warning="${item.id}-wantedRed"></div>
+          </td>
+          <td class="num">${formatGold(item.priceOrange)}</td>
+          <td class="num">${formatGold(item.priceRed)}</td>
+          <td class="num"><strong>${formatGold(rowCost)}</strong></td>
+        `;
+        els.body.appendChild(row);
+      });
+
+      els.wantedOrangeTotal.textContent = wantedOrangeTotal;
+      els.wantedRedTotal.textContent = wantedRedTotal;
+      els.wantedTotal.textContent = wantedOrangeTotal + wantedRedTotal;
+      els.totalCost.textContent = formatGold(totalCost);
+      els.note.textContent = buildNote();
+    }
+
+    function showStatus(message) {
+      els.status.textContent = message;
+      window.clearTimeout(showStatus.timer);
+      showStatus.timer = window.setTimeout(() => els.status.textContent = "", 2800);
+    }
+
+    function clearWarning(id, field) {
+      const warning = document.querySelector(`[data-warning="${id}-${field}"]`);
+      if (warning) warning.textContent = "";
+    }
+
+    function commitWantedValue(id, field, rawValue, inputElement, shouldRender = true) {
+      const item = ingredients.find(entry => entry.id === id);
+      if (!item) return;
+
+      const max = field === "wantedOrange" ? item.availableOrange : item.availableRed;
+      const requested = toNumber(rawValue);
+      const value = clamp(requested, 0, max);
+
+      item[field] = value;
+      clearWarning(id, field);
+
+      if (requested > max) {
+        if (inputElement) inputElement.value = max;
+        const warning = document.querySelector(`[data-warning="${id}-${field}"]`);
+        if (warning) warning.textContent = `Maksymalnie: ${max}`;
+      }
+
+      if (shouldRender) render();
+    }
+
+    function scheduleWantedValue(id, field, rawValue, inputElement) {
+      const key = `${id}:${field}`;
+      const pending = pendingSaleInputs.get(key);
+      if (pending) window.clearTimeout(pending.timeoutId);
+
+      const timeoutId = window.setTimeout(() => {
+        commitWantedValue(id, field, rawValue, inputElement, true);
+        pendingSaleInputs.delete(key);
+      }, INPUT_DELAY_MS);
+
+      pendingSaleInputs.set(key, { timeoutId, id, field, rawValue, inputElement });
+    }
+
+    function flushPendingSaleInputs() {
+      pendingSaleInputs.forEach(entry => {
+        window.clearTimeout(entry.timeoutId);
+        commitWantedValue(entry.id, entry.field, entry.rawValue, entry.inputElement, false);
+      });
+      pendingSaleInputs.clear();
+      render();
+    }
+
+    els.body.addEventListener("input", event => {
+      const target = event.target;
+      const id = target.dataset.id;
+      const field = target.dataset.field;
+      if (!id || (field !== "wantedOrange" && field !== "wantedRed")) return;
+      clearWarning(id, field);
+      scheduleWantedValue(id, field, target.value, target);
+    });
+
+    els.body.addEventListener("blur", event => {
+      const target = event.target;
+      const id = target.dataset.id;
+      const field = target.dataset.field;
+      if (!id || (field !== "wantedOrange" && field !== "wantedRed")) return;
+
+      const key = `${id}:${field}`;
+      const pending = pendingSaleInputs.get(key);
+      if (pending) {
+        window.clearTimeout(pending.timeoutId);
+        pendingSaleInputs.delete(key);
+      }
+
+      commitWantedValue(id, field, target.value, target, true);
+    }, true);
+
+    els.searchInput.addEventListener("input", () => {
+      flushPendingSaleInputs();
+    });
+
+    els.useAllBtn.addEventListener("click", () => {
+      flushPendingSaleInputs();
+      ingredients.forEach(item => {
+        item.wantedOrange = item.availableOrange;
+        item.wantedRed = item.availableRed;
+      });
+      render();
+    });
+
+    els.zeroWantedBtn.addEventListener("click", () => {
+      flushPendingSaleInputs();
+      ingredients.forEach(item => {
+        item.wantedOrange = 0;
+        item.wantedRed = 0;
+      });
+      render();
+    });
+
+    els.copyNoteBtn.addEventListener("click", async () => {
+      flushPendingSaleInputs();
+      try {
+        await navigator.clipboard.writeText(els.note.textContent);
+        showStatus("Notatka została skopiowana.");
+      } catch {
+        showStatus("Nie udało się skopiować notatki.");
+      }
+    });
+
+    if (loadFromUrl()) {
+      els.emptyState.hidden = true;
+      els.app.hidden = false;
+      if (updatedAt) {
+        const date = new Date(updatedAt);
+        els.updatedInfo.textContent = Number.isNaN(date.getTime()) ? "" : `Stan z: ${date.toLocaleString("pl-PL")}`;
+      }
+      render();
+    } else {
+      els.emptyState.hidden = false;
+      els.app.hidden = true;
+    }
+  </script>
+</body>
+</html>
