@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Przelicznik cen składników na złotówki</title>
+  <style>
+    :root {
+      --bg: #f5f2ed;
+      --card: #ffffff;
+      --text: #1f2933;
+      --muted: #6b7280;
+      --border: #ddd6cc;
+      --accent: #9a6b2f;
+      --accent-dark: #745022;
+      --red: #c0392b;
+      --orange: #e67e22;
+      --success: #1f7a4d;
+      --danger: #b83b32;
+      --shadow: 0 12px 30px rgba(31, 41, 51, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 30px 18px 56px;
+    }
+
+    header { margin-bottom: 22px; }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      line-height: 1.15;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 21px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      max-width: 920px;
+      margin: 0;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 0 0 12px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin: 0 0 6px;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 11px;
+      font-size: 15px;
+      background: #fffdf9;
+      color: var(--text);
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(154, 107, 47, 0.16);
+    }
+
+    .rate-grid {
+      display: grid;
+      grid-template-columns: minmax(220px, 320px) 1fr;
+      gap: 16px;
+      align-items: end;
+    }
+
+    .rate-box {
+      border: 1px solid var(--border);
+      background: #fffdf9;
+      border-radius: 14px;
+      padding: 12px;
+      color: var(--muted);
+    }
+
+    .rate-box strong {
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .search { max-width: 360px; }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      max-height: 650px;
+      background: #fffdf9;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1180px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #f1e9dd;
+      font-size: 14px;
+      color: #3d3428;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .badge.red { color: #7f1d1d; background: #fde2df; }
+    .badge.orange { color: #7c3d00; background: #ffe8cf; }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .metric {
+      border: 1px solid var(--border);
+      background: #fffdf9;
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .metric span { display: block; color: var(--muted); font-size: 13px; margin-bottom: 4px; }
+    .metric strong { font-size: 19px; font-variant-numeric: tabular-nums; }
+
+    .empty {
+      border: 1px solid #efd3a4;
+      background: #fff7e8;
+      color: #68410e;
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    @media (max-width: 900px) {
+      .summary { grid-template-columns: repeat(2, 1fr); }
+      .rate-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .page { padding: 22px 12px 42px; }
+      .card { padding: 16px; }
+      h1 { font-size: 27px; }
+      .summary { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <h1>Przelicznik cen składników na złotówki</h1>
+      <p class="subtitle">Ta strona bierze składniki, ceny i kurs złotówek z linku wygenerowanego w panelu. Kursu nie da się tutaj zmienić.</p>
+    </header>
+
+    <section id="emptyState" class="card" hidden>
+      <div class="empty">
+        Brak danych. Otwórz link do przelicznika wygenerowany z panelu składników.
+      </div>
+    </section>
+
+    <section id="app" hidden>
+      <section class="card">
+        <h2>Kurs ustawiony w panelu</h2>
+        <div class="rate-grid">
+          <div class="rate-box">
+            <div id="rateInfo"><strong>1 000 000 złota = 0,7 zł</strong></div>
+            <div class="small" style="margin:6px 0 0;">Kurs jest zapisany w linku. Osoba oglądająca tę stronę nie może go tutaj zmienić.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="toolbar">
+          <div>
+            <h2 style="margin-bottom:6px;">Ceny w złotówkach</h2>
+            <p class="small" id="updatedInfo" style="margin-bottom:0;"></p>
+          </div>
+          <input class="search" id="searchInput" type="text" placeholder="Szukaj składnika..." />
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Składnik</th>
+                <th><span class="badge orange">Dostępne pom.</span></th>
+                <th><span class="badge red">Dostępne czerw.</span></th>
+                <th>Cena pom. złoto</th>
+                <th>Cena czerw. złoto</th>
+                <th>Cena pom. PLN</th>
+                <th>Cena czerw. PLN</th>
+                <th>Wartość dostępnych PLN</th>
+              </tr>
+            </thead>
+            <tbody id="ingredientsBody"></tbody>
+          </table>
+        </div>
+
+        <div class="summary">
+          <div class="metric"><span>Dostępne pom.</span><strong id="totalOrange">0</strong></div>
+          <div class="metric"><span>Dostępne czerw.</span><strong id="totalRed">0</strong></div>
+          <div class="metric"><span>Wartość stanu w złocie</span><strong id="totalGoldValue">0 złota</strong></div>
+          <div class="metric"><span>Wartość stanu w PLN</span><strong id="totalPlnValue">0 zł</strong></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const DEFAULT_PLN_RATE_PER_MILLION = 0.7;
+    let ingredients = [];
+    let updatedAt = "";
+    let plnRatePerMillion = DEFAULT_PLN_RATE_PER_MILLION;
+
+    const els = {
+      emptyState: document.getElementById("emptyState"),
+      app: document.getElementById("app"),
+      rateInfo: document.getElementById("rateInfo"),
+      updatedInfo: document.getElementById("updatedInfo"),
+      searchInput: document.getElementById("searchInput"),
+      body: document.getElementById("ingredientsBody"),
+      totalOrange: document.getElementById("totalOrange"),
+      totalRed: document.getElementById("totalRed"),
+      totalGoldValue: document.getElementById("totalGoldValue"),
+      totalPlnValue: document.getElementById("totalPlnValue")
+    };
+
+    function toNumber(value) {
+      const normalized = String(value ?? "").trim().replace(/\s/g, "").replace(",", ".");
+      const number = Number(normalized);
+      return Number.isFinite(number) && number > 0 ? Math.floor(number) : 0;
+    }
+
+    function toDecimal(value) {
+      const normalized = String(value ?? "").trim().replace(/\s/g, "").replace(",", ".");
+      const number = Number(normalized);
+      return Number.isFinite(number) && number > 0 ? number : 0;
+    }
+
+    function normalizeText(value) {
+      return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function formatGold(value) {
+      return new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 0 }).format(toNumber(value)) + " złota";
+    }
+
+    function formatNumber(value) {
+      return new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 0 }).format(toNumber(value));
+    }
+
+    function formatPln(value) {
+      const number = Number(value) || 0;
+      if (number === 0) return "0 zł";
+      const digits = Math.abs(number) >= 1 ? 2 : Math.abs(number) >= 0.01 ? 4 : 6;
+      return new Intl.NumberFormat("pl-PL", {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      }).format(number) + " zł";
+    }
+
+    function formatPlnRate(value) {
+      return new Intl.NumberFormat("pl-PL", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 6
+      }).format(Number(value) || 0) + " zł";
+    }
+
+    function goldToPln(gold) {
+      return toNumber(gold) * plnRatePerMillion / 1000000;
+    }
+
+    function decodeData(value) {
+      const normalized = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+      const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+      const binary = atob(padded);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      return JSON.parse(new TextDecoder().decode(bytes));
+    }
+
+    function loadFromUrl() {
+      const hash = window.location.hash.replace(/^#/, "");
+      const params = new URLSearchParams(hash);
+      const encoded = params.get("d");
+      if (!encoded) return false;
+
+      try {
+        const data = decodeData(encoded);
+        if (!data || !Array.isArray(data.items)) return false;
+        updatedAt = data.updatedAt || "";
+        plnRatePerMillion = toDecimal(data.plnRatePerMillion) || DEFAULT_PLN_RATE_PER_MILLION;
+        ingredients = data.items.map((item, index) => ({
+          id: String(index) + "-" + normalizeText(item.n),
+          name: String(item.n || "Bez nazwy").trim(),
+          availableOrange: toNumber(item.ao),
+          availableRed: toNumber(item.ar),
+          priceOrange: toNumber(item.po),
+          priceRed: toNumber(item.pr)
+        }));
+        return ingredients.length > 0;
+      } catch {
+        return false;
+      }
+    }
+
+    function filteredIngredients() {
+      const query = normalizeText(els.searchInput.value);
+      if (!query) return ingredients;
+      return ingredients.filter(item => normalizeText(item.name).includes(query));
+    }
+
+    function render() {
+      els.rateInfo.innerHTML = `<strong>1 000 000 złota = ${formatPlnRate(plnRatePerMillion)}</strong>`;
+
+      const filtered = filteredIngredients();
+      els.body.innerHTML = "";
+
+      let totalOrange = 0;
+      let totalRed = 0;
+      let totalGoldValue = 0;
+
+      ingredients.forEach(item => {
+        totalOrange += item.availableOrange;
+        totalRed += item.availableRed;
+        totalGoldValue += item.availableOrange * item.priceOrange + item.availableRed * item.priceRed;
+      });
+
+      if (filtered.length === 0) {
+        els.body.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px;">Brak składników do wyświetlenia.</td></tr>`;
+      }
+
+      filtered.forEach(item => {
+        const rowGoldValue = item.availableOrange * item.priceOrange + item.availableRed * item.priceRed;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${escapeHtml(item.name)}</td>
+          <td class="num">${formatNumber(item.availableOrange)}</td>
+          <td class="num">${formatNumber(item.availableRed)}</td>
+          <td class="num">${formatGold(item.priceOrange)}</td>
+          <td class="num">${formatGold(item.priceRed)}</td>
+          <td class="num"><strong>${formatPln(goldToPln(item.priceOrange))}</strong></td>
+          <td class="num"><strong>${formatPln(goldToPln(item.priceRed))}</strong></td>
+          <td class="num"><strong>${formatPln(goldToPln(rowGoldValue))}</strong></td>
+        `;
+        els.body.appendChild(row);
+      });
+
+      els.totalOrange.textContent = formatNumber(totalOrange);
+      els.totalRed.textContent = formatNumber(totalRed);
+      els.totalGoldValue.textContent = formatGold(totalGoldValue);
+      els.totalPlnValue.textContent = formatPln(goldToPln(totalGoldValue));
+    }
+
+    els.searchInput.addEventListener("input", render);
+
+    if (loadFromUrl()) {
+      els.emptyState.hidden = true;
+      els.app.hidden = false;
+      if (updatedAt) {
+        const date = new Date(updatedAt);
+        els.updatedInfo.textContent = Number.isNaN(date.getTime()) ? "" : `Stan z: ${date.toLocaleString("pl-PL")}`;
+      }
+      render();
+    } else {
+      els.emptyState.hidden = false;
+      els.app.hidden = true;
+    }
+  </script>
+</body>
+</html>
