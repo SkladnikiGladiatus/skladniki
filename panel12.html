@@ -348,6 +348,11 @@
         <section class="card">
           <h2>Link dla kupującego</h2>
           <p class="small">Po zmianie listy albo cen wygeneruj nowy link i wyślij go kupującemu. Kupujący nie może zmieniać stanu ani cen.</p>
+
+          <label for="publicBaseUrl">Adres strony na GitHub Pages</label>
+          <input id="publicBaseUrl" type="url" placeholder="https://twojanazwa.github.io/skladniki/" />
+          <p class="small">Wpisz adres folderu, w którym leży <strong>index.html</strong>. Panel zapamięta ten adres w tej przeglądarce.</p>
+
           <div class="actions">
             <button class="success" id="generateLinkBtn">Generuj link</button>
             <button class="secondary" id="copyLinkBtn">Kopiuj link</button>
@@ -400,6 +405,7 @@
 
   <script>
     const STORAGE_KEY = "skladniki-admin-v1";
+    const PUBLIC_BASE_URL_KEY = "skladniki-public-base-url";
     const DEFAULT_ORANGE_PRICE = 2000;
     const DEFAULT_RED_PRICE = 4000;
     const EXAMPLE_TEXT = "Adrenalina | pomarańczowe:69 | czerwone:14\nAkwamaryn | pomarańczowe:69 | czerwone:12";
@@ -420,6 +426,7 @@
       resetBtn: document.getElementById("resetBtn"),
       generateLinkBtn: document.getElementById("generateLinkBtn"),
       copyLinkBtn: document.getElementById("copyLinkBtn"),
+      publicBaseUrl: document.getElementById("publicBaseUrl"),
       publicLink: document.getElementById("publicLink"),
       searchInput: document.getElementById("searchInput"),
       visibleRowsInfo: document.getElementById("visibleRowsInfo"),
@@ -642,17 +649,53 @@
       };
     }
 
+    function getPublicIndexUrl() {
+      const entered = els.publicBaseUrl.value.trim();
+
+      if (entered) {
+        try {
+          let base = entered;
+          if (!/\/index\.html(?:[?#].*)?$/i.test(base)) {
+            if (!base.endsWith("/")) base += "/";
+            base += "index.html";
+          }
+          const url = new URL(base);
+          url.search = "";
+          url.hash = "";
+          localStorage.setItem(PUBLIC_BASE_URL_KEY, entered);
+          return url;
+        } catch {
+          showStatus("Wpisz poprawny adres GitHub Pages, np. https://twojanazwa.github.io/skladniki/");
+          els.publicBaseUrl.focus();
+          return null;
+        }
+      }
+
+      const currentUrl = new URL(window.location.href);
+      if (currentUrl.protocol === "file:") {
+        showStatus("Wpisz adres GitHub Pages. Panel jest teraz otwarty z pliku lokalnego, więc nie da się z niego zrobić publicznego linku.");
+        els.publicBaseUrl.focus();
+        return null;
+      }
+
+      currentUrl.pathname = currentUrl.pathname.replace(/[^/]*$/, "index.html");
+      currentUrl.search = "";
+      currentUrl.hash = "";
+      return currentUrl;
+    }
+
     function generatePublicLink() {
       if (ingredients.length === 0) {
         showStatus("Najpierw dodaj lub wczytaj składniki.");
         return "";
       }
-      const url = new URL(window.location.href);
-      url.pathname = url.pathname.replace(/[^/]*$/, "index.html");
-      url.search = "";
+
+      const url = getPublicIndexUrl();
+      if (!url) return "";
+
       url.hash = "d=" + encodeData(publicData());
       els.publicLink.value = url.toString();
-      showStatus("Link został wygenerowany.");
+      showStatus("Link do GitHub Pages został wygenerowany.");
       return els.publicLink.value;
     }
 
@@ -727,6 +770,12 @@
       ingredients = ingredients.filter(item => item.id !== id);
       render();
       showStatus("Składnik został usunięty.");
+    });
+
+    els.publicBaseUrl.value = localStorage.getItem(PUBLIC_BASE_URL_KEY) || "";
+    els.publicBaseUrl.addEventListener("input", () => {
+      localStorage.setItem(PUBLIC_BASE_URL_KEY, els.publicBaseUrl.value.trim());
+      els.publicLink.value = "";
     });
 
     loadState();
