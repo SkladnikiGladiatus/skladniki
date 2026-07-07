@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Przelicznik cen składników na złotówki</title>
+  <title>Kalkulator sprzedaży składników PLN</title>
   <style>
     :root {
       --bg: #f5f2ed;
@@ -71,13 +71,7 @@
       margin: 0 0 12px;
     }
 
-    label {
-      display: block;
-      font-weight: 700;
-      margin: 0 0 6px;
-    }
-
-    input {
+    input, textarea {
       width: 100%;
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -88,30 +82,28 @@
       outline: none;
     }
 
-    input:focus {
+    input:focus, textarea:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(154, 107, 47, 0.16);
     }
 
-    .rate-grid {
-      display: grid;
-      grid-template-columns: minmax(220px, 320px) 1fr;
-      gap: 16px;
-      align-items: end;
+    button {
+      appearance: none;
+      border: 0;
+      background: var(--accent);
+      color: white;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
     }
 
-    .rate-box {
-      border: 1px solid var(--border);
-      background: #fffdf9;
-      border-radius: 14px;
-      padding: 12px;
-      color: var(--muted);
-    }
-
-    .rate-box strong {
-      color: var(--text);
-      font-variant-numeric: tabular-nums;
-    }
+    button:hover { background: var(--accent-dark); }
+    button.secondary { background: #ece3d6; color: var(--text); }
+    button.secondary:hover { background: #dfd1bf; }
+    button.success { background: var(--success); }
+    button.success:hover { background: #155c39; }
 
     .toolbar {
       display: flex;
@@ -124,6 +116,25 @@
 
     .search { max-width: 360px; }
 
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 14px 0;
+      align-items: center;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: #f1e9dd;
+      color: #4b3a28;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
     .table-wrap {
       overflow-x: auto;
       border: 1px solid var(--border);
@@ -135,7 +146,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 1180px;
+      min-width: 1050px;
     }
 
     th, td {
@@ -156,6 +167,7 @@
     }
 
     tr:last-child td { border-bottom: 0; }
+    td input { padding: 8px 9px; min-width: 82px; }
     .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
     .badge {
@@ -188,6 +200,16 @@
     .metric span { display: block; color: var(--muted); font-size: 13px; margin-bottom: 4px; }
     .metric strong { font-size: 19px; font-variant-numeric: tabular-nums; }
 
+    .note-box {
+      white-space: pre-wrap;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      background: #fffdf9;
+      min-height: 140px;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
     .empty {
       border: 1px solid #efd3a4;
       background: #fff7e8;
@@ -196,9 +218,24 @@
       padding: 14px;
     }
 
+    .status {
+      color: var(--success);
+      font-size: 14px;
+      font-weight: 700;
+      min-height: 20px;
+      margin-left: auto;
+    }
+
+    .warning {
+      color: var(--danger);
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 5px;
+      min-height: 16px;
+    }
+
     @media (max-width: 900px) {
       .summary { grid-template-columns: repeat(2, 1fr); }
-      .rate-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 560px) {
@@ -212,34 +249,30 @@
 <body>
   <main class="page">
     <header>
-      <h1>Przelicznik cen składników na złotówki</h1>
-      <p class="subtitle">Ta strona bierze składniki, ceny i kurs złotówek z linku wygenerowanego w panelu. Kursu nie da się tutaj zmienić.</p>
+      <h1>Kalkulator sprzedaży składników</h1>
+      <p class="subtitle">Wybierz ilości. Dostępny stan, nazwy, ceny i kurs są tylko do odczytu.</p>
     </header>
 
     <section id="emptyState" class="card" hidden>
       <div class="empty">
-        Brak danych. Otwórz link do przelicznika wygenerowany z panelu składników.
+        Brak danych. Otwórz link wygenerowany z panelu składników.
       </div>
     </section>
 
     <section id="app" hidden>
       <section class="card">
-        <h2>Kurs ustawiony w panelu</h2>
-        <div class="rate-grid">
-          <div class="rate-box">
-            <div id="rateInfo"><strong>1 000 000 złota = 0,7 zł</strong></div>
-            <div class="small" style="margin:6px 0 0;">Kurs jest zapisany w linku. Osoba oglądająca tę stronę nie może go tutaj zmienić.</div>
-          </div>
-        </div>
-      </section>
-
-      <section class="card">
         <div class="toolbar">
           <div>
-            <h2 style="margin-bottom:6px;">Ceny w złotówkach</h2>
+            <h2 style="margin-bottom:6px;">Stan i wycena sprzedaży</h2>
             <p class="small" id="updatedInfo" style="margin-bottom:0;"></p>
           </div>
           <input class="search" id="searchInput" type="text" placeholder="Szukaj składnika..." />
+        </div>
+
+        <div class="actions">
+          <button class="secondary" id="useAllBtn">Wybierz wszystko dostępne</button>
+          <button class="secondary" id="zeroWantedBtn">Wyzeruj ilości</button>
+          <span class="pill" id="visibleRowsInfo">0 pozycji</span>
         </div>
 
         <div class="table-wrap">
@@ -249,11 +282,11 @@
                 <th>Składnik</th>
                 <th><span class="badge orange">Dostępne pom.</span></th>
                 <th><span class="badge red">Dostępne czerw.</span></th>
-                <th>Cena pom. złoto</th>
-                <th>Cena czerw. złoto</th>
+                <th><span class="badge orange">Potrzebne pom.</span></th>
+                <th><span class="badge red">Potrzebne czerw.</span></th>
                 <th>Cena pom. PLN</th>
                 <th>Cena czerw. PLN</th>
-                <th>Wartość dostępnych PLN</th>
+                <th>Koszt razem PLN</th>
               </tr>
             </thead>
             <tbody id="ingredientsBody"></tbody>
@@ -261,10 +294,19 @@
         </div>
 
         <div class="summary">
-          <div class="metric"><span>Dostępne pom.</span><strong id="totalOrange">0</strong></div>
-          <div class="metric"><span>Dostępne czerw.</span><strong id="totalRed">0</strong></div>
-          <div class="metric"><span>Wartość stanu w złocie</span><strong id="totalGoldValue">0 złota</strong></div>
-          <div class="metric"><span>Wartość stanu w PLN</span><strong id="totalPlnValue">0 zł</strong></div>
+          <div class="metric"><span>Potrzebne pom.</span><strong id="wantedOrangeTotal">0</strong></div>
+          <div class="metric"><span>Potrzebne czerw.</span><strong id="wantedRedTotal">0</strong></div>
+          <div class="metric"><span>Potrzebne razem</span><strong id="wantedTotal">0</strong></div>
+          <div class="metric"><span>Koszt razem</span><strong id="totalCost">0,00 zł</strong></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Notatka</h2>
+        <div id="note" class="note-box"></div>
+        <div class="actions">
+          <button class="success" id="copyNoteBtn">Kopiuj notatkę</button>
+          <span id="status" class="status"></span>
         </div>
       </section>
     </section>
@@ -272,21 +314,29 @@
 
   <script>
     const DEFAULT_PLN_RATE_PER_MILLION = 0.7;
+    const INPUT_DELAY_MS = 2000;
+
     let ingredients = [];
     let updatedAt = "";
     let plnRatePerMillion = DEFAULT_PLN_RATE_PER_MILLION;
+    const pendingSaleInputs = new Map();
 
     const els = {
       emptyState: document.getElementById("emptyState"),
       app: document.getElementById("app"),
-      rateInfo: document.getElementById("rateInfo"),
       updatedInfo: document.getElementById("updatedInfo"),
       searchInput: document.getElementById("searchInput"),
+      useAllBtn: document.getElementById("useAllBtn"),
+      zeroWantedBtn: document.getElementById("zeroWantedBtn"),
+      visibleRowsInfo: document.getElementById("visibleRowsInfo"),
       body: document.getElementById("ingredientsBody"),
-      totalOrange: document.getElementById("totalOrange"),
-      totalRed: document.getElementById("totalRed"),
-      totalGoldValue: document.getElementById("totalGoldValue"),
-      totalPlnValue: document.getElementById("totalPlnValue")
+      wantedOrangeTotal: document.getElementById("wantedOrangeTotal"),
+      wantedRedTotal: document.getElementById("wantedRedTotal"),
+      wantedTotal: document.getElementById("wantedTotal"),
+      totalCost: document.getElementById("totalCost"),
+      note: document.getElementById("note"),
+      copyNoteBtn: document.getElementById("copyNoteBtn"),
+      status: document.getElementById("status")
     };
 
     function toNumber(value) {
@@ -299,6 +349,10 @@
       const normalized = String(value ?? "").trim().replace(/\s/g, "").replace(",", ".");
       const number = Number(normalized);
       return Number.isFinite(number) && number > 0 ? number : 0;
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(toNumber(value), min), max);
     }
 
     function normalizeText(value) {
@@ -318,28 +372,14 @@
         .replaceAll("'", "&#039;");
     }
 
-    function formatGold(value) {
-      return new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 0 }).format(toNumber(value)) + " złota";
-    }
-
     function formatNumber(value) {
       return new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 0 }).format(toNumber(value));
     }
 
     function formatPln(value) {
-      const number = Number(value) || 0;
-      if (number === 0) return "0 zł";
-      const digits = Math.abs(number) >= 1 ? 2 : Math.abs(number) >= 0.01 ? 4 : 6;
       return new Intl.NumberFormat("pl-PL", {
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits
-      }).format(number) + " zł";
-    }
-
-    function formatPlnRate(value) {
-      return new Intl.NumberFormat("pl-PL", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 6
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
       }).format(Number(value) || 0) + " zł";
     }
 
@@ -372,6 +412,8 @@
           name: String(item.n || "Bez nazwy").trim(),
           availableOrange: toNumber(item.ao),
           availableRed: toNumber(item.ar),
+          wantedOrange: 0,
+          wantedRed: 0,
           priceOrange: toNumber(item.po),
           priceRed: toNumber(item.pr)
         }));
@@ -387,20 +429,46 @@
       return ingredients.filter(item => normalizeText(item.name).includes(query));
     }
 
-    function render() {
-      els.rateInfo.innerHTML = `<strong>1 000 000 złota = ${formatPlnRate(plnRatePerMillion)}</strong>`;
+    function pluralOrange(qty) {
+      if (qty === 1) return "1 sztuka pomarańczowa";
+      if (qty % 10 >= 2 && qty % 10 <= 4 && !(qty % 100 >= 12 && qty % 100 <= 14)) return `${qty} sztuki pomarańczowe`;
+      return `${qty} sztuk pomarańczowych`;
+    }
 
+    function pluralRed(qty) {
+      if (qty === 1) return "1 czerwona";
+      if (qty % 10 >= 2 && qty % 10 <= 4 && !(qty % 100 >= 12 && qty % 100 <= 14)) return `${qty} czerwone`;
+      return `${qty} czerwonych`;
+    }
+
+    function buildNote() {
+      const selected = ingredients.filter(item => item.wantedOrange > 0 || item.wantedRed > 0);
+      if (selected.length === 0) return "Nie wybrano jeszcze składników.";
+      return selected
+        .map(item => {
+          const orangeCost = goldToPln(item.wantedOrange * item.priceOrange);
+          const redCost = goldToPln(item.wantedRed * item.priceRed);
+          const rowCost = orangeCost + redCost;
+          return `${item.name} : ${pluralOrange(item.wantedOrange)} / ${pluralRed(item.wantedRed)} | koszt pom.: ${formatPln(orangeCost)} | koszt czerw.: ${formatPln(redCost)} | razem: ${formatPln(rowCost)}`;
+        })
+        .join("\n");
+    }
+
+    function render() {
       const filtered = filteredIngredients();
+      els.visibleRowsInfo.textContent = `${filtered.length} z ${ingredients.length} pozycji`;
       els.body.innerHTML = "";
 
-      let totalOrange = 0;
-      let totalRed = 0;
-      let totalGoldValue = 0;
+      let wantedOrangeTotal = 0;
+      let wantedRedTotal = 0;
+      let totalCostPln = 0;
 
       ingredients.forEach(item => {
-        totalOrange += item.availableOrange;
-        totalRed += item.availableRed;
-        totalGoldValue += item.availableOrange * item.priceOrange + item.availableRed * item.priceRed;
+        item.wantedOrange = clamp(item.wantedOrange, 0, item.availableOrange);
+        item.wantedRed = clamp(item.wantedRed, 0, item.availableRed);
+        wantedOrangeTotal += item.wantedOrange;
+        wantedRedTotal += item.wantedRed;
+        totalCostPln += goldToPln(item.wantedOrange * item.priceOrange + item.wantedRed * item.priceRed);
       });
 
       if (filtered.length === 0) {
@@ -408,28 +476,145 @@
       }
 
       filtered.forEach(item => {
-        const rowGoldValue = item.availableOrange * item.priceOrange + item.availableRed * item.priceRed;
+        const orangeUnitPln = goldToPln(item.priceOrange);
+        const redUnitPln = goldToPln(item.priceRed);
+        const rowCostPln = goldToPln(item.wantedOrange * item.priceOrange + item.wantedRed * item.priceRed);
         const row = document.createElement("tr");
         row.innerHTML = `
           <td>${escapeHtml(item.name)}</td>
           <td class="num">${formatNumber(item.availableOrange)}</td>
           <td class="num">${formatNumber(item.availableRed)}</td>
-          <td class="num">${formatGold(item.priceOrange)}</td>
-          <td class="num">${formatGold(item.priceRed)}</td>
-          <td class="num"><strong>${formatPln(goldToPln(item.priceOrange))}</strong></td>
-          <td class="num"><strong>${formatPln(goldToPln(item.priceRed))}</strong></td>
-          <td class="num"><strong>${formatPln(goldToPln(rowGoldValue))}</strong></td>
+          <td>
+            <input type="number" min="0" max="${item.availableOrange}" step="1" value="${item.wantedOrange}" data-id="${item.id}" data-field="wantedOrange" />
+            <div class="warning" data-warning="${item.id}-wantedOrange"></div>
+          </td>
+          <td>
+            <input type="number" min="0" max="${item.availableRed}" step="1" value="${item.wantedRed}" data-id="${item.id}" data-field="wantedRed" />
+            <div class="warning" data-warning="${item.id}-wantedRed"></div>
+          </td>
+          <td class="num"><strong>${formatPln(orangeUnitPln)}</strong></td>
+          <td class="num"><strong>${formatPln(redUnitPln)}</strong></td>
+          <td class="num"><strong>${formatPln(rowCostPln)}</strong></td>
         `;
         els.body.appendChild(row);
       });
 
-      els.totalOrange.textContent = formatNumber(totalOrange);
-      els.totalRed.textContent = formatNumber(totalRed);
-      els.totalGoldValue.textContent = formatGold(totalGoldValue);
-      els.totalPlnValue.textContent = formatPln(goldToPln(totalGoldValue));
+      els.wantedOrangeTotal.textContent = formatNumber(wantedOrangeTotal);
+      els.wantedRedTotal.textContent = formatNumber(wantedRedTotal);
+      els.wantedTotal.textContent = formatNumber(wantedOrangeTotal + wantedRedTotal);
+      els.totalCost.textContent = formatPln(totalCostPln);
+      els.note.textContent = buildNote();
     }
 
-    els.searchInput.addEventListener("input", render);
+    function showStatus(message) {
+      els.status.textContent = message;
+      window.clearTimeout(showStatus.timer);
+      showStatus.timer = window.setTimeout(() => els.status.textContent = "", 2800);
+    }
+
+    function clearWarning(id, field) {
+      const warning = document.querySelector(`[data-warning="${id}-${field}"]`);
+      if (warning) warning.textContent = "";
+    }
+
+    function commitWantedValue(id, field, rawValue, inputElement, shouldRender = true) {
+      const item = ingredients.find(entry => entry.id === id);
+      if (!item) return;
+
+      const max = field === "wantedOrange" ? item.availableOrange : item.availableRed;
+      const requested = toNumber(rawValue);
+      const value = clamp(requested, 0, max);
+
+      item[field] = value;
+      clearWarning(id, field);
+
+      if (requested > max) {
+        if (inputElement) inputElement.value = max;
+        const warning = document.querySelector(`[data-warning="${id}-${field}"]`);
+        if (warning) warning.textContent = `Maksymalnie: ${max}`;
+      }
+
+      if (shouldRender) render();
+    }
+
+    function scheduleWantedValue(id, field, rawValue, inputElement) {
+      const key = `${id}:${field}`;
+      const pending = pendingSaleInputs.get(key);
+      if (pending) window.clearTimeout(pending.timeoutId);
+
+      const timeoutId = window.setTimeout(() => {
+        commitWantedValue(id, field, rawValue, inputElement, true);
+        pendingSaleInputs.delete(key);
+      }, INPUT_DELAY_MS);
+
+      pendingSaleInputs.set(key, { timeoutId, id, field, rawValue, inputElement });
+    }
+
+    function flushPendingSaleInputs() {
+      pendingSaleInputs.forEach(entry => {
+        window.clearTimeout(entry.timeoutId);
+        commitWantedValue(entry.id, entry.field, entry.rawValue, entry.inputElement, false);
+      });
+      pendingSaleInputs.clear();
+      render();
+    }
+
+    els.body.addEventListener("input", event => {
+      const target = event.target;
+      const id = target.dataset.id;
+      const field = target.dataset.field;
+      if (!id || (field !== "wantedOrange" && field !== "wantedRed")) return;
+      clearWarning(id, field);
+      scheduleWantedValue(id, field, target.value, target);
+    });
+
+    els.body.addEventListener("blur", event => {
+      const target = event.target;
+      const id = target.dataset.id;
+      const field = target.dataset.field;
+      if (!id || (field !== "wantedOrange" && field !== "wantedRed")) return;
+
+      const key = `${id}:${field}`;
+      const pending = pendingSaleInputs.get(key);
+      if (pending) {
+        window.clearTimeout(pending.timeoutId);
+        pendingSaleInputs.delete(key);
+      }
+
+      commitWantedValue(id, field, target.value, target, true);
+    }, true);
+
+    els.searchInput.addEventListener("input", () => {
+      flushPendingSaleInputs();
+    });
+
+    els.useAllBtn.addEventListener("click", () => {
+      flushPendingSaleInputs();
+      ingredients.forEach(item => {
+        item.wantedOrange = item.availableOrange;
+        item.wantedRed = item.availableRed;
+      });
+      render();
+    });
+
+    els.zeroWantedBtn.addEventListener("click", () => {
+      flushPendingSaleInputs();
+      ingredients.forEach(item => {
+        item.wantedOrange = 0;
+        item.wantedRed = 0;
+      });
+      render();
+    });
+
+    els.copyNoteBtn.addEventListener("click", async () => {
+      flushPendingSaleInputs();
+      try {
+        await navigator.clipboard.writeText(els.note.textContent);
+        showStatus("Notatka została skopiowana.");
+      } catch {
+        showStatus("Nie udało się skopiować notatki.");
+      }
+    });
 
     if (loadFromUrl()) {
       els.emptyState.hidden = true;
