@@ -366,19 +366,32 @@
         </section>
 
         <section class="card">
+          <h2>Kurs złotówek</h2>
+          <p class="small">Ten kurs zostanie zapisany w linku do strony złotówkowej. Osoba z linkiem zobaczy gotowe ceny i nie będzie mogła zmienić kursu.</p>
+
+          <label for="plnRatePerMillion">1 000 000 złota = ile zł?</label>
+          <input id="plnRatePerMillion" type="text" inputmode="decimal" value="0,7" placeholder="0,7" />
+          <p class="small" id="plnRatePreview">1 000 000 złota = 0,7 zł</p>
+        </section>
+
+        <section class="card">
           <h2>Link dla kupującego</h2>
-          <p class="small">Po zmianie listy albo cen wygeneruj nowy link i wyślij go kupującemu. Kupujący nie może zmieniać stanu ani cen.</p>
+          <p class="small">Po zmianie listy, cen albo kursu wygeneruj nowy link. Kupujący nie może zmieniać stanu, cen ani kursu złotówek.</p>
 
           <label for="publicBaseUrl">Adres strony na GitHub Pages</label>
           <input id="publicBaseUrl" type="url" placeholder="https://twojanazwa.github.io/skladniki/" />
           <p class="small">Wpisz adres folderu, w którym leży <strong>index.html</strong>. Panel zapamięta ten adres w tej przeglądarce.</p>
 
           <div class="actions">
-            <button class="success" id="generateLinkBtn">Generuj link</button>
-            <button class="secondary" id="copyLinkBtn">Kopiuj link</button>
+            <button class="success" id="generateLinkBtn">Generuj linki</button>
+            <button class="secondary" id="copyLinkBtn">Kopiuj link dla kupującego</button>
+            <button class="secondary" id="copyPlnLinkBtn">Kopiuj link zł</button>
           </div>
-          <label for="publicLink">Wygenerowany link</label>
+          <label for="publicLink">Link dla kupującego</label>
           <textarea id="publicLink" class="link-output" readonly></textarea>
+
+          <label for="plnLink">Link do przelicznika złotówek</label>
+          <textarea id="plnLink" class="link-output" readonly></textarea>
         </section>
       </aside>
 
@@ -427,12 +440,14 @@
     const STORAGE_KEY = "skladniki-admin-v1";
     const PUBLIC_BASE_URL_KEY = "skladniki-public-base-url";
     const DEFAULT_ORANGE_PRICE = 2000;
+    const DEFAULT_PLN_RATE_PER_MILLION = 0.7;
     const DEFAULT_RED_PRICE = 4000;
     const EXAMPLE_TEXT = "Adrenalina | pomarańczowe:69 | czerwone:14\nAkwamaryn | pomarańczowe:69 | czerwone:12";
     const EXAMPLE_PRICES_TEXT = "Drewno\t200 000\t1 100 000\nMiedź\t200 000\t1 500 000\nSkóra\t200 000\t1 500 000";
 
     let ingredients = [];
     let priceBook = {};
+    let plnRatePerMillion = DEFAULT_PLN_RATE_PER_MILLION;
 
     const els = {
       pasteData: document.getElementById("pasteData"),
@@ -448,12 +463,16 @@
       manualRed: document.getElementById("manualRed"),
       manualPriceOrange: document.getElementById("manualPriceOrange"),
       manualPriceRed: document.getElementById("manualPriceRed"),
+      plnRatePerMillion: document.getElementById("plnRatePerMillion"),
+      plnRatePreview: document.getElementById("plnRatePreview"),
       addManualBtn: document.getElementById("addManualBtn"),
       resetBtn: document.getElementById("resetBtn"),
       generateLinkBtn: document.getElementById("generateLinkBtn"),
       copyLinkBtn: document.getElementById("copyLinkBtn"),
+      copyPlnLinkBtn: document.getElementById("copyPlnLinkBtn"),
       publicBaseUrl: document.getElementById("publicBaseUrl"),
       publicLink: document.getElementById("publicLink"),
+      plnLink: document.getElementById("plnLink"),
       searchInput: document.getElementById("searchInput"),
       visibleRowsInfo: document.getElementById("visibleRowsInfo"),
       body: document.getElementById("ingredientsBody"),
@@ -474,6 +493,29 @@
       const normalized = String(value ?? "").trim().replace(/\s/g, "").replace(",", ".");
       const number = Number(normalized);
       return Number.isFinite(number) && number > 0 ? Math.floor(number) : 0;
+    }
+
+    function toDecimal(value) {
+      const normalized = String(value ?? "").trim().replace(/\s/g, "").replace(",", ".");
+      const number = Number(normalized);
+      return Number.isFinite(number) && number > 0 ? number : 0;
+    }
+
+    function formatPlnRate(value) {
+      return new Intl.NumberFormat("pl-PL", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 6
+      }).format(Number(value) || 0) + " zł";
+    }
+
+    function currentPlnRate() {
+      return toDecimal(els.plnRatePerMillion.value) || DEFAULT_PLN_RATE_PER_MILLION;
+    }
+
+    function updatePlnRatePreview() {
+      plnRatePerMillion = currentPlnRate();
+      els.plnRatePreview.textContent = `1 000 000 złota = ${formatPlnRate(plnRatePerMillion)}`;
+      saveState();
     }
 
     function normalizeText(value) {
@@ -639,7 +681,7 @@
     }
 
     function saveState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ingredients, priceBook }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ingredients, priceBook, plnRatePerMillion }));
     }
 
     function loadState() {
@@ -647,6 +689,8 @@
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return;
         const parsed = JSON.parse(raw);
+        plnRatePerMillion = toDecimal(parsed.plnRatePerMillion) || DEFAULT_PLN_RATE_PER_MILLION;
+        els.plnRatePerMillion.value = String(plnRatePerMillion).replace(".", ",");
         priceBook = parsed.priceBook && typeof parsed.priceBook === "object" ? parsed.priceBook : {};
         Object.keys(priceBook).forEach(key => {
           const entry = priceBook[key] || {};
@@ -755,9 +799,11 @@
     }
 
     function publicData() {
+      plnRatePerMillion = currentPlnRate();
       return {
-        v: 1,
+        v: 2,
         updatedAt: new Date().toISOString(),
+        plnRatePerMillion,
         items: ingredients.map(item => ({
           n: item.name,
           ao: toNumber(item.availableOrange),
@@ -768,16 +814,15 @@
       };
     }
 
-    function getPublicIndexUrl() {
+    function getPublicPageUrl(fileName) {
       const entered = els.publicBaseUrl.value.trim();
 
       if (entered) {
         try {
           let base = entered;
-          if (!/\/index\.html(?:[?#].*)?$/i.test(base)) {
-            if (!base.endsWith("/")) base += "/";
-            base += "index.html";
-          }
+          base = base.replace(/\/(index|panel|zl)\.html(?:[?#].*)?$/i, "/");
+          if (!base.endsWith("/")) base += "/";
+          base += fileName;
           const url = new URL(base);
           url.search = "";
           url.hash = "";
@@ -797,25 +842,38 @@
         return null;
       }
 
-      currentUrl.pathname = currentUrl.pathname.replace(/[^/]*$/, "index.html");
+      currentUrl.pathname = currentUrl.pathname.replace(/[^/]*$/, fileName);
       currentUrl.search = "";
       currentUrl.hash = "";
       return currentUrl;
     }
 
-    function generatePublicLink() {
+    function generateLinks() {
+      updatePlnRatePreview();
       if (ingredients.length === 0) {
         showStatus("Najpierw dodaj lub wczytaj składniki.");
-        return "";
+        return { publicLink: "", plnLink: "" };
       }
 
-      const url = getPublicIndexUrl();
-      if (!url) return "";
+      const encoded = "d=" + encodeData(publicData());
+      const publicUrl = getPublicPageUrl("index.html");
+      const plnUrl = getPublicPageUrl("zl.html");
+      if (!publicUrl || !plnUrl) return { publicLink: "", plnLink: "" };
 
-      url.hash = "d=" + encodeData(publicData());
-      els.publicLink.value = url.toString();
-      showStatus("Link do GitHub Pages został wygenerowany.");
-      return els.publicLink.value;
+      publicUrl.hash = encoded;
+      plnUrl.hash = encoded;
+      els.publicLink.value = publicUrl.toString();
+      els.plnLink.value = plnUrl.toString();
+      showStatus("Linki do GitHub Pages zostały wygenerowane.");
+      return { publicLink: els.publicLink.value, plnLink: els.plnLink.value };
+    }
+
+    function generatePublicLink() {
+      return generateLinks().publicLink;
+    }
+
+    function generatePlnLink() {
+      return generateLinks().plnLink;
     }
 
     async function copyText(text, successMessage) {
@@ -866,12 +924,14 @@
       ingredients = [];
       priceBook = {};
       els.publicLink.value = "";
+      els.plnLink.value = "";
       render();
       showStatus("Stan został wyczyszczony.");
     });
 
-    els.generateLinkBtn.addEventListener("click", generatePublicLink);
-    els.copyLinkBtn.addEventListener("click", () => copyText(els.publicLink.value || generatePublicLink(), "Link został skopiowany."));
+    els.generateLinkBtn.addEventListener("click", generateLinks);
+    els.copyLinkBtn.addEventListener("click", () => copyText(els.publicLink.value || generatePublicLink(), "Link dla kupującego został skopiowany."));
+    els.copyPlnLinkBtn.addEventListener("click", () => copyText(els.plnLink.value || generatePlnLink(), "Link do przelicznika zł został skopiowany."));
     els.searchInput.addEventListener("input", render);
 
     els.body.addEventListener("input", event => {
@@ -909,9 +969,16 @@
     els.publicBaseUrl.addEventListener("input", () => {
       localStorage.setItem(PUBLIC_BASE_URL_KEY, els.publicBaseUrl.value.trim());
       els.publicLink.value = "";
+      els.plnLink.value = "";
+    });
+    els.plnRatePerMillion.addEventListener("input", () => {
+      updatePlnRatePreview();
+      els.publicLink.value = "";
+      els.plnLink.value = "";
     });
 
     loadState();
+    updatePlnRatePreview();
     render();
   </script>
 </body>
